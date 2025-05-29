@@ -1,0 +1,23 @@
+# 基础依赖
+numpy>=1.20.0
+pandas>=1.3.0
+Pillow>=9.0.0
+scikit-learn>=1.0.0
+tqdm>=4.62.0
+
+# 深度学习框架
+torch>=1.10.0
+torchvision>=0.11.0
+
+# 预训练模型
+transformers>=4.18.0
+
+# Web UI
+streamlit>=1.8.0
+streamlit-folium>=0.11.0
+
+# 注意：tkinter是Python标准库的一部分，无需额外安装
+# 但在某些Linux发行版中可能需要安装系统包：
+# Ubuntu/Debian: sudo apt-get install python3-tk
+# CentOS/RHEL: sudo yum install python3-tkinter
+# Arch Linux: sudo pacman -S tk 
