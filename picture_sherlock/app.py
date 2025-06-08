@@ -8,6 +8,7 @@ import time
 import tempfile
 import shutil
 import glob
+import base64
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Union, Any
 
@@ -264,6 +265,33 @@ def load_image(image_path: str) -> Optional[Image.Image]:
     except Exception as e:
         st.error(_("image_load_error").format(error=str(e)))
         return None
+
+
+def get_file_download_link(file_path: str) -> str:
+    """
+    为文件路径创建可下载的链接
+    
+    Args:
+        file_path: 文件路径
+        
+    Returns:
+        str: 包含下载链接的HTML字符串
+    """
+    try:
+        # 获取文件名
+        file_name = os.path.basename(file_path)
+        
+        # 读取文件内容
+        with open(file_path, "rb") as file:
+            file_bytes = file.read()
+        
+        # 创建base64编码的下载链接
+        b64 = base64.b64encode(file_bytes).decode()
+        href = f'<a href="data:application/octet-stream;base64,{b64}" download="{file_name}">{file_path}</a>'
+        return href
+    except Exception as e:
+        # 如果出现错误，返回原始路径
+        return file_path
 
 
 def main():
@@ -655,7 +683,8 @@ def main():
                                                         caption=_("similarity").format(value=similarity),
                                                         use_container_width=True
                                                     )
-                                                    st.write(_("path").format(path=path))
+                                                    # 使用可下载链接替换纯文本路径
+                                                    st.markdown(_("path").format(path=get_file_download_link(path)), unsafe_allow_html=True)
                                                     st.write("---")
                                             except Exception as e:
                                                 st.error(f"无法加载图像 {path}: {e}")
