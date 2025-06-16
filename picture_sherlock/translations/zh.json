@@ -176,5 +176,5 @@
   "folder_required": "请先选择至少一个包含图像的文件夹",
   "clear_all_folders": "清除所有文件夹",
   "start_search": "开始搜索",
-  "about_content": "# Picture Sherlock\n[![GitHub](https://img.shields.io/badge/GitHub-查看源码-blue?logo=github&style=for-the-badge)](https://github.com/CN-Scars/picture-sherlock)\n\n此应用使用预训练的深度学习模型提取图像特征，并在本地图像库中搜索相似图像。\n\n## 技术栈\n- Python\n- Streamlit (UI)\n- PyTorch (深度学习)\n- CLIP/ResNet50/自定义模型 (预训练模型)\n\n## 使用方法\n1. 选择特征提取模型\n2. 选择图像库文件夹\n3. 上传查询图像\n4. 点击“开始搜索”按钮\n5. 等待搜索结果\n\n## 提示\n- 首次使用时，模型会下载并加载，可能需要一些时间\n- 初次扫描大型图像库时，索引构建可能会比较耗时\n- 使用CLIP模型可以获得更好的语义匹配，但速度可能较慢\n- ResNet50模型速度更快，但在语义理解上可能不如CLIP\n- 自定义模型允许使用其他兼容的Hugging Face模型"
+  "about_content": "# Picture Sherlock\n[![GitHub](https://img.shields.io/badge/GitHub-查看源码-blue?logo=github&style=for-the-badge)](https://github.com/CN-Scars/picture_sherlock)\n\n此应用使用预训练的深度学习模型提取图像特征，并在本地图像库中搜索相似图像。\n\n## 技术栈\n- Python\n- Streamlit (UI)\n- PyTorch (深度学习)\n- CLIP/ResNet50/自定义模型 (预训练模型)\n\n## 使用方法\n1. 选择特征提取模型\n2. 选择图像库文件夹\n3. 上传查询图像\n4. 点击“开始搜索”按钮\n5. 等待搜索结果\n\n## 提示\n- 首次使用时，模型会下载并加载，可能需要一些时间\n- 初次扫描大型图像库时，索引构建可能会比较耗时\n- 使用CLIP模型可以获得更好的语义匹配，但速度可能较慢\n- ResNet50模型速度更快，但在语义理解上可能不如CLIP\n- 自定义模型允许使用其他兼容的Hugging Face模型"
 } 
