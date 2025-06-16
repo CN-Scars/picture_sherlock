@@ -15,6 +15,7 @@ transformers>=4.18.0
 # Web UI
 streamlit>=1.8.0
 streamlit-folium>=0.11.0
+plotly>=6.1.2
 
 # 注意：tkinter是Python标准库的一部分，无需额外安装
 # 但在某些Linux发行版中可能需要安装系统包：

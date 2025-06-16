@@ -317,4 +317,22 @@ class FeatureExtractor:
         Returns:
             np.ndarray: 图像的特征向量，如果处理失败则返回None
         """
-        return self.extract_features(image_path) 
+        return self.extract_features(image_path)
+
+    def get_model_name(self) -> str:
+        """
+        获取当前使用的模型名称
+        
+        Returns:
+            str: 模型名称
+        """
+        if self.model_name:
+            return self.model_name
+        
+        # 根据模型类型返回标准名称
+        if self.model_type == 'clip':
+            return 'openai/clip-vit-base-patch32'
+        elif self.model_type == 'resnet':
+            return 'resnet50'
+        else:
+            return f"unknown_{self.model_type}" 

@@ -22,10 +22,12 @@ try:
     # 尝试绝对导入
     from picture_sherlock.utils import logger, SUPPORTED_EXTENSIONS, get_cache_path_for_folders
     from picture_sherlock.feature_extractor import FeatureExtractor
+    from picture_sherlock.cache_manager import CacheManager
 except ImportError:
     # 尝试直接导入
     from utils import logger, SUPPORTED_EXTENSIONS, get_cache_path_for_folders
     from feature_extractor import FeatureExtractor
+    from cache_manager import CacheManager
 
 
 class ImageIndexer:
@@ -45,6 +47,8 @@ class ImageIndexer:
         self.image_paths = []
         self.features = None
         self.index_built = False
+        self.cache_manager = CacheManager()
+        self.current_cache_id = None
         
     def scan_image_files(self, folder_paths: List[str]) -> List[str]:
         """
@@ -72,17 +76,23 @@ class ImageIndexer:
         logger.info(f"找到 {len(image_paths)} 张图像文件")
         return image_paths
         
-    def _load_cached_index(self, cache_path: str) -> bool:
+    def _load_cached_index(self, cache_entry: Dict[str, Any]) -> bool:
         """
         尝试加载缓存的索引
         
         Args:
-            cache_path: 缓存文件的基础路径（不含扩展名）
+            cache_entry: 缓存条目信息
             
         Returns:
             bool: 如果成功加载缓存则返回True，否则返回False
         """
         try:
+            cache_id = cache_entry['id']
+            self.current_cache_id = cache_id
+            
+            # 获取缓存文件路径
+            cache_path = self.cache_manager.get_cache_base_path(cache_id)
+            
             # 加载图像路径
             paths_file = f"{cache_path}_paths.pkl"
             features_file = f"{cache_path}_features.npy"
@@ -94,7 +104,7 @@ class ImageIndexer:
                 self.features = np.load(features_file)
                 
                 if len(self.image_paths) > 0 and self.features is not None:
-                    logger.info(f"从缓存加载了索引，包含 {len(self.image_paths)} 张图像")
+                    logger.info(f"从缓存加载了索引，包含 {len(self.image_paths)} 张图像，使用的缓存ID: {cache_id}")
                     self.index_built = True
                     return True
                     
@@ -103,17 +113,23 @@ class ImageIndexer:
             
         return False
         
-    def _save_index_to_cache(self, cache_path: str) -> bool:
+    def _save_index_to_cache(self, cache_entry: Dict[str, Any]) -> bool:
         """
         将当前索引保存到缓存
         
         Args:
-            cache_path: 缓存文件的基础路径（不含扩展名）
+            cache_entry: 缓存条目信息
             
         Returns:
             bool: 保存成功返回True，否则返回False
         """
         try:
+            cache_id = cache_entry['id']
+            self.current_cache_id = cache_id
+            
+            # 获取缓存文件路径
+            cache_path = self.cache_manager.get_cache_base_path(cache_id)
+            
             # 保存图像路径
             paths_file = f"{cache_path}_paths.pkl"
             features_file = f"{cache_path}_features.npy"
@@ -124,7 +140,7 @@ class ImageIndexer:
             # 保存特征向量
             np.save(features_file, self.features)
             
-            logger.info(f"已将索引缓存到: {cache_path}")
+            logger.info(f"已将索引缓存到: {cache_path}，缓存ID: {cache_id}")
             return True
             
         except Exception as e:
@@ -151,23 +167,27 @@ class ImageIndexer:
         start_time = time.time()
         
         try:
-            # 获取缓存路径
-            cache_path = get_cache_path_for_folders(folder_paths)
+            # 如果没有设置特征提取器，则初始化一个
+            if self.feature_extractor is None:
+                self.feature_extractor = FeatureExtractor(self.model_type)
+                
+            # 获取模型名称
+            model_name = self.feature_extractor.get_model_name()
             
             # 尝试从缓存加载，除非强制重建
-            if not force_rebuild and self._load_cached_index(cache_path):
-                return True
-                
+            if not force_rebuild:
+                # 查找匹配的缓存
+                cache_entry = self.cache_manager.find_cache(model_name, folder_paths)
+                if cache_entry and self._load_cached_index(cache_entry):
+                    logger.info(f"成功从缓存加载索引，使用的模型: {model_name}")
+                    return True
+                    
             # 扫描图像文件
             self.image_paths = self.scan_image_files(folder_paths)
             
             if not self.image_paths:
                 logger.warning("未找到任何图像文件")
                 return False
-                
-            # 初始化特征提取器
-            if self.feature_extractor is None:
-                self.feature_extractor = FeatureExtractor(self.model_type)
                 
             # 提取特征
             logger.info(f"开始为{len(self.image_paths)}张图像提取特征...")
@@ -208,8 +228,9 @@ class ImageIndexer:
             self.features = np.vstack(features_list)
             self.index_built = True
             
-            # 缓存结果
-            self._save_index_to_cache(cache_path)
+            # 创建新的缓存条目并保存
+            cache_entry = self.cache_manager.create_cache(model_name, folder_paths)
+            self._save_index_to_cache(cache_entry)
             
             elapsed_time = time.time() - start_time
             logger.info(f"特征索引构建完成，处理了 {len(self.image_paths)} 张图像，耗时 {elapsed_time:.2f} 秒")
