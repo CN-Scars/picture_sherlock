@@ -20,11 +20,13 @@ try:
     from picture_sherlock.utils import logger, validate_paths
     from picture_sherlock.feature_extractor import FeatureExtractor
     from picture_sherlock.image_indexer import ImageIndexer
+    from picture_sherlock.search_history_manager import SearchHistoryManager
 except ImportError:
     # 尝试直接导入
     from utils import logger, validate_paths
     from feature_extractor import FeatureExtractor
     from image_indexer import ImageIndexer
+    from search_history_manager import SearchHistoryManager
 
 
 class SimilaritySearch:
@@ -32,31 +34,45 @@ class SimilaritySearch:
     相似度搜索类：提供图像相似度计算和搜索功能
     """
     
-    def __init__(self, 
-                model_type: str = 'clip', 
+    def __init__(self,
+                model_type: str = 'clip',
                 model_name: Optional[str] = None,
-                download_progress_callback: Optional[Callable[[str, float], None]] = None):
+                download_progress_callback: Optional[Callable[[str, float], None]] = None,
+                enable_history: bool = True):
         """
         初始化相似度搜索器
-        
+
         Args:
             model_type: 使用的模型类型 ('clip', 'resnet' 或 'custom')
             model_name: 自定义模型名称，当model_type为'custom'时必须提供
             download_progress_callback: 模型下载进度回调函数
+            enable_history: 是否启用搜索历史记录
         """
         self.model_type = model_type
         self.model_name = model_name
         self.download_progress_callback = download_progress_callback
-        
+        self.enable_history = enable_history
+
         # 初始化特征提取器
         self.feature_extractor = FeatureExtractor(
             model_type=model_type,
             model_name=model_name,
             download_progress_callback=download_progress_callback
         )
-        
+
         # 初始化图像索引器
         self.image_indexer = ImageIndexer(model_type)
+
+        # 初始化搜索历史管理器
+        if self.enable_history:
+            try:
+                self.history_manager = SearchHistoryManager()
+            except Exception as e:
+                logger.warning(f"Failed to initialize search history manager: {e}")
+                self.enable_history = False
+                self.history_manager = None
+        else:
+            self.history_manager = None
         
     def calculate_similarity(self, 
                             query_vector: np.ndarray, 
@@ -80,22 +96,28 @@ class SimilaritySearch:
         
         return similarities
         
-    def search_similar_images(self, 
-                             query_image_path: str, 
-                             folder_paths: List[str], 
+    def search_similar_images(self,
+                             query_image_path: str,
+                             folder_paths: List[str],
                              top_n: int = 10,
                              force_rebuild_index: bool = False,
-                             progress_callback=None) -> List[Dict[str, Any]]:
+                             progress_callback=None,
+                             similarity_threshold: float = 0.0,
+                             save_to_history: bool = True,
+                             reuse_image_path: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         搜索与查询图像相似的图像
-        
+
         Args:
             query_image_path: 查询图像的路径
             folder_paths: 要搜索的文件夹路径列表
             top_n: 返回最相似的图像数量
             force_rebuild_index: 是否强制重建索引
             progress_callback: 进度回调函数
-            
+            similarity_threshold: 相似度阈值（用于历史记录）
+            save_to_history: 是否保存到搜索历史
+            reuse_image_path: 复用现有图像的相对路径（用于重新执行搜索）
+
         Returns:
             List[Dict[str, Any]]: 相似图像结果列表，每个元素包含图像路径和相似度得分
                 [
@@ -174,7 +196,7 @@ class SimilaritySearch:
                     continue
                     
                 results.append({
-                    "path": path,
+                    "path": path,  # 保持绝对路径
                     "similarity": float(similarities[idx])  # 转换为Python标准类型
                 })
                 
@@ -184,10 +206,53 @@ class SimilaritySearch:
                     
             elapsed_time = time.time() - start_time
             logger.info(f"搜索完成，找到 {len(results)} 个结果，耗时 {elapsed_time:.2f} 秒")
-            
+
+            # 保存搜索历史记录
+            if save_to_history and self.enable_history and self.history_manager:
+                try:
+                    # 计算最高相似度
+                    top_similarity = max([r['similarity'] for r in results]) if results else 0.0
+
+                    # 获取实际使用的模型名称
+                    actual_model_name = self.model_name or self.feature_extractor.get_model_name()
+
+                    # 根据是否复用图像选择不同的保存方法
+                    if reuse_image_path:
+                        # 复用现有图像
+                        record_id = self.history_manager.add_search_record_with_existing_image(
+                            existing_image_path=reuse_image_path,
+                            target_folders=valid_paths,
+                            model_type=self.model_type,
+                            model_name=actual_model_name,
+                            similarity_threshold=similarity_threshold,
+                            results_count=len(results),
+                            execution_time=elapsed_time,
+                            max_results=top_n,
+                            top_similarity=top_similarity,
+                            search_results=results
+                        )
+                        logger.info(f"搜索历史已保存（复用图像），记录ID: {record_id}")
+                    else:
+                        # 保存新图像
+                        record_id = self.history_manager.add_search_record(
+                            query_image_path=query_image_path,
+                            target_folders=valid_paths,
+                            model_type=self.model_type,
+                            model_name=actual_model_name,
+                            similarity_threshold=similarity_threshold,
+                            results_count=len(results),
+                            execution_time=elapsed_time,
+                            max_results=top_n,
+                            top_similarity=top_similarity,
+                            search_results=results
+                        )
+                        logger.info(f"搜索历史已保存，记录ID: {record_id}")
+                except Exception as e:
+                    logger.warning(f"保存搜索历史失败: {e}")
+
             if progress_callback:
                 progress_callback(1.0)  # 完成
-                
+
             return results
             
         except Exception as e:
