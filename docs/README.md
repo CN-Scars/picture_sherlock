@@ -10,24 +10,25 @@
 
 ## 🚀 Project Overview
 
-Picture Sherlock is a deep learning-based image comparison tool that rapidly identifies similar images within a large collection by analyzing image features. The tool utilizes pre-trained neural network models (such as ResNet, VGG, etc.) to extract image features and employs vector similarity calculation methods (like cosine similarity) for precise matching.
+Picture Sherlock is a deep learning-based image comparison tool that rapidly identifies similar images within a large collection by analyzing image features. The tool utilizes pre-trained neural network models (such as CLIP and ResNet50) to extract image features and employs cosine similarity calculation for precise matching.
 
-![preview1](./imgs/en-US/preview1.png)
+![Search Feature Demo 1](./imgs/en-US/preview1.png)
 
-![preview2](./imgs/en-US/preview2.png)
-
-![preview3](./imgs/en-US/preview3.png)
-
-![preview4](./imgs/en-US/preview4.png)
+![Search Feature Demo 2](./imgs/en-US/preview2.png)
 
 ## ✨ Features
 
 - 🖼️ Upload reference images and search for similar images in specified folders
-- 🔍 Support for multiple similarity calculation methods (Euclidean distance, cosine similarity, etc.)
-- ⚙️ Customizable result quantity
+- 🔍 Advanced cosine similarity calculation for precise image matching
+- 🤖 Multiple AI models support: CLIP (semantic understanding), ResNet50 (visual features), and custom Hugging Face models
+- ⚙️ Customizable result quantity and search parameters
 - 🌐 Bilingual interface with English and Chinese language options
 - 📊 Similarity percentage scoring and visualization
-- 📁 Support for various image formats (JPG, PNG, WEBP, etc.)
+- 📁 Support for various image formats (JPG, PNG, WEBP, BMP)
+- 📝 **Search History**: Automatically save search history with tags, notes, and favorites
+- 🏷️ **Tag Management**: Organize and categorize search records with a comprehensive tag system
+- 📈 **Statistics**: Provide search frequency, model usage, and tag usage analytics
+- 💾 **Data Management**: Support import/export and backup/restore of search history
 
 ## 🔧 System Requirements
 
